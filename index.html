@@ -16,10 +16,22 @@ button.primary{background:var(--acc);color:#05202a;border-color:var(--acc);font-
 input[type=text]{background:#10121a;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:140px;font:inherit}
 input[type=number]{background:#10121a;color:var(--txt);border:1px solid var(--line);border-radius:4px;padding:3px 4px;width:64px;font:inherit}
 label.chk{display:flex;gap:4px;align-items:center;color:var(--mut);cursor:pointer}
-main{flex:1;display:grid;grid-template-columns:240px 1fr 270px;min-height:0}
-aside{background:var(--panel);overflow:auto;padding:8px}
-#list{border-right:1px solid var(--line)}
-#props{border-left:1px solid var(--line)}
+main{flex:1;display:grid;grid-template-columns:1fr 340px;grid-template-rows:minmax(0,1fr);min-height:0}
+main[data-tab=add]{grid-template-columns:1fr}
+main[data-tab=add] #stage,main[data-tab=add] #right{display:none}
+main[data-tab=view] #addTab{display:none}
+#tabs{display:flex;gap:6px;padding:6px 12px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+#tabs button{border-radius:8px 8px 0 0;border-bottom:none;padding:8px 18px;font-weight:600;color:var(--mut)}
+#tabs button.on{background:var(--bg);color:var(--acc);border-color:var(--acc)}
+#addTab{overflow:auto;padding:12px;min-width:0}
+.addbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.addbar h3{margin:0 8px 0 0}
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+#list .thumb{width:60px;height:60px}
+#list .item{background:var(--panel);border-color:var(--line)}
+#list .tip{grid-column:1/-1}
+#right{display:flex;flex-direction:column;overflow:auto;background:var(--panel);border-left:1px solid var(--line);min-width:0}
+aside{padding:8px}
 .item{display:flex;gap:8px;align-items:center;padding:6px;border:1px solid transparent;border-radius:8px;cursor:pointer}
 .item:hover{background:#252a35}
 .item.sel{border-color:var(--acc);background:#202b36}
@@ -31,14 +43,14 @@ aside{background:var(--panel);overflow:auto;padding:8px}
 .item .nm small{color:var(--mut)}
 .item .ok{color:#6ee7a0}
 #stage{display:flex;flex-direction:column;gap:8px;padding:10px;min-width:0;min-height:0}
-#cvwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
-#anbar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+#cvwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;container-type:size}
+#anbar{border-bottom:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:6px;font-size:13px}
 .anrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .anrow select{width:auto;max-width:190px}
 header select{width:auto}
 .anrow input[type=range]{flex:1;min-width:90px}
 .kc{padding:2px 7px;font-size:12px}
-canvas{max-width:100%;max-height:100%;aspect-ratio:3/4;border:1px solid var(--line);border-radius:8px;touch-action:none;background:repeating-conic-gradient(#222633 0 25%,#1b1e28 0 50%) 0 0/20px 20px}
+canvas{width:min(100cqw,75cqh);height:auto;max-width:100%;aspect-ratio:3/4;border:1px solid var(--line);border-radius:8px;touch-action:none;background:repeating-conic-gradient(#222633 0 25%,#1b1e28 0 50%) 0 0/20px 20px}
 .row{display:grid;grid-template-columns:96px 1fr 64px;gap:6px;align-items:center;margin:5px 0}
 .row span{color:var(--mut);font-size:12px}
 .row input[type=range]{width:100%}
@@ -54,15 +66,13 @@ select{background:#10121a;color:var(--txt);border:1px solid var(--line);border-r
 .mrow small{color:var(--mut)}
 .mrow .thumb canvas{max-width:100%;max-height:100%}
 .mfoot{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
-@media(max-width:860px){body{height:auto}main{grid-template-columns:1fr;display:block}#stage{height:70vh}aside{max-height:none}}
+@media(max-width:860px){body{height:auto}main{display:block}#stage{height:80vh}#right{border-left:0}#addTab{overflow:visible}}
 </style>
 </head>
 <body>
 <header>
   <h1>🦴 Lắp khung xương tướng</h1>
   <input type="text" id="cname" value="tuong_01" title="Tên tướng">
-  <label class="btn primary">Mở PSD (tự tách + gắn)<input type="file" id="psdIn" accept=".psd,.psb" hidden></label>
-  <label class="btn">Chọn nhiều ảnh<input type="file" id="multi" accept="image/*" multiple hidden></label>
   <label class="chk">Góc nhìn <select id="viewSel"><option value="front">Chính diện</option><option value="left">Nghiêng trái 90°</option><option value="right">Nghiêng phải 90°</option></select></label>
   <button id="bSave">Lưu dự án</button>
   <label class="btn">Mở dự án<input type="file" id="bLoad" accept=".json" hidden></label>
@@ -71,10 +81,19 @@ select{background:#10121a;color:var(--txt);border:1px solid var(--line);border-r
   <label class="chk"><input type="checkbox" id="cBones" checked>Xương</label>
   <label class="chk"><input type="checkbox" id="cGrid" checked>Lưới</label>
   </header>
-<main>
-  <aside id="list"></aside>
+<nav id="tabs"><button data-tab="add">① Thêm ảnh</button><button data-tab="view" class="on">② Xem &amp; chỉnh</button></nav>
+<main data-tab="view">
+  <section id="addTab">
+    <div class="addbar"><h3>Thêm ảnh bộ phận</h3>
+      <label class="btn primary">Mở PSD (tự tách + gắn)<input type="file" id="psdIn" accept=".psd,.psb" hidden></label>
+      <label class="btn">Chọn nhiều ảnh<input type="file" id="multi" accept="image/*" multiple hidden></label>
+      <button id="toView">Xem &amp; chỉnh →</button></div>
+    <div id="list"></div>
+  </section>
   <section id="stage">
     <div id="cvwrap"><canvas id="cv"></canvas></div>
+  </section>
+  <div id="right">
     <div id="anbar">
       <div class="anrow"><b>Chuyển động</b><select id="anSel"></select><button id="anPlay">▶</button><button id="anNew">Mới</button><button id="anDup">Nhân bản</button><button id="anDel">Xóa</button><button id="anRst">Khôi phục mẫu</button></div>
       <div class="anrow"><label class="chk"><input type="checkbox" id="anLoop">Lặp</label><label class="chk" title="Chuyển đều giữa các keyframe, không giảm tốc ở mỗi mốc"><input type="checkbox" id="anLin">Chuyển đều</label><label class="chk">Thời lượng (s) <input type="number" id="anDur" step="0.1" min="0.1" value="1" style="width:64px"></label><label class="chk">Tốc độ <input type="range" id="anSpd" min="0.25" max="2" step="0.05" value="1"><span id="anSpdV">1x</span></label></div>
@@ -83,8 +102,8 @@ select{background:#10121a;color:var(--txt);border:1px solid var(--line);border-r
       <div class="anrow"><span style="color:var(--mut)">Cả người:</span> X <input type="range" id="rX" min="-300" max="300" step="1" value="0"> Y <input type="range" id="rY" min="-300" max="300" step="1" value="0"> Xoay <input type="range" id="rR" min="-360" max="360" step="1" value="0"> Lật ngang <input type="range" id="rS" min="-2" max="0" step="0.01" value="0"></div>
       <div class="tip" style="margin:0">Tự tạo động tác: kéo thanh thời gian tới mốc cần → chọn bộ phận, chỉnh “Xoay động tác” ở bảng bên phải → bấm “Ghi keyframe”. Lặp lại ở các mốc khác rồi bấm ▶.</div>
     </div>
-  </section>
-  <aside id="props"></aside>
+    <aside id="props"></aside>
+  </div>
 </main>
 <div id="modal" hidden><div class="mbox">
   <h3 id="mTitle" style="margin:0">PSD</h3>
@@ -247,7 +266,7 @@ window.addEventListener('keydown',e=>{
 
 // ---------- danh sách bộ phận ----------
 function buildList(){
-  const L=$('#list');L.innerHTML='<h3>Bộ phận</h3>';
+  const L=$('#list');L.innerHTML='';
   parts.forEach(p=>{
     const d=document.createElement('div');d.className='item'+(p.id===sel?' sel':'');d.dataset.id=p.id;
     d.innerHTML='<div class="thumb">'+(p.src?'<img src="'+p.src+'">':'')+'</div><div class="nm"><b>'+p.name+'</b><small class="'+(p.src?'ok':'')+'">'+(p.src?'✓ đã có ảnh':'kéo thả ảnh vào đây')+'</small></div>';
@@ -423,6 +442,10 @@ function builtinAnims(){
     'Đứng nghiêng (idle)':mk(1.6,true,[
       [0,{armL:4,armR:-4,forearmL:6,forearmR:6,cape:-3}],
       [.8,{torso:-1.5,head:2,armL:7,armR:-6,forearmL:10,forearmR:9,cape:-6,rootY:-2}]]),
+    'Đứng nghiêng (áo bay)':Object.assign(mk(2,true,Array.from({length:16},(_,i)=>{
+      const a=i/16*Math.PI*2,r=v=>Math.round(v*10)/10,s=Math.sin;
+      return[i/8,{cape:r(-17-9*s(a)-4*s(2*a+1)),torso:r(-1+1.2*s(a-.6)),head:r(1.5*s(a-1)),armL:r(5+3*s(a-.8)),armR:r(4+3*s(a-.8)),forearmL:r(8+4*s(a-1.2)),forearmR:r(8+4*s(a-1.2)),rootX:r(1.5*s(a-.5))}];
+    })),{lin:true}),
     'Đi bộ nghiêng':mk(.9,true,[
       [0,{thighL:28,shinL:-4,thighR:-22,shinR:-30,armL:-25,armR:25,forearmL:8,forearmR:25,torso:-3,cape:-8}],
       [.225,{thighL:4,shinL:-2,thighR:10,shinR:-55,armL:-5,armR:5,forearmL:10,forearmR:15,torso:-3,rootY:-4,cape:-14}],
@@ -757,9 +780,13 @@ async function applyPSD(){
       p.x=Math.round(tgt[id].x-pw.x);p.y=Math.round(tgt[id].y-pw.y);});
   }
   $('#modal').hidden=true;$('#mOk').disabled=false;psdPending=null;
-  select(sel);
+  select(sel);setTab('view');
 }
 
+// ---------- tab ----------
+function setTab(t){$('main').dataset.tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$('#toView').onclick=()=>setTab('view');
 // ---------- sự kiện ----------
 $('#psdIn').onchange=e=>{openPSD(e.target.files[0]);e.target.value='';};
 $('#mCancel').onclick=()=>{$('#modal').hidden=true;psdPending=null;};
