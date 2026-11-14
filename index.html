@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lắp khung xương tướng</title>
+<style>
+:root{--bg:#14161c;--panel:#1d2028;--line:#2c313d;--txt:#e6e8ee;--mut:#8b93a5;--acc:#4cc9f0;--acc2:#f72585}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font-size:15px;margin:0 8px 0 0}
+button,.btn{background:#2a2f3b;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;font:inherit}
+button:hover,.btn:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);color:#05202a;border-color:var(--acc);font-weight:600}
+input[type=text]{background:#10121a;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:140px;font:inherit}
+input[type=number]{background:#10121a;color:var(--txt);border:1px solid var(--line);border-radius:4px;padding:3px 4px;width:64px;font:inherit}
+label.chk{display:flex;gap:4px;align-items:center;color:var(--mut);cursor:pointer}
+main{flex:1;display:grid;grid-template-columns:240px 1fr 270px;min-height:0}
+aside{background:var(--panel);overflow:auto;padding:8px}
+#list{border-right:1px solid var(--line)}
+#props{border-left:1px solid var(--line)}
+.item{display:flex;gap:8px;align-items:center;padding:6px;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.item:hover{background:#252a35}
+.item.sel{border-color:var(--acc);background:#202b36}
+.item.drop{border-color:var(--acc2)}
+.thumb{width:38px;height:38px;border-radius:6px;background:repeating-conic-gradient(#2a2f3b 0 25%,#232733 0 50%) 0 0/10px 10px;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.thumb img{max-width:100%;max-height:100%}
+.item .nm{flex:1;min-width:0}
+.item .nm b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .nm small{color:var(--mut)}
+.item .ok{color:#6ee7a0}
+#stage{display:flex;flex-direction:column;gap:8px;padding:10px;min-width:0;min-height:0}
+#cvwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#anbar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.anrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.anrow select{width:auto;max-width:190px}
+header select{width:auto}
+.anrow input[type=range]{flex:1;min-width:90px}
+.kc{padding:2px 7px;font-size:12px}
+canvas{max-width:100%;max-height:100%;aspect-ratio:3/4;border:1px solid var(--line);border-radius:8px;touch-action:none;background:repeating-conic-gradient(#222633 0 25%,#1b1e28 0 50%) 0 0/20px 20px}
+.row{display:grid;grid-template-columns:96px 1fr 64px;gap:6px;align-items:center;margin:5px 0}
+.row span{color:var(--mut);font-size:12px}
+.row input[type=range]{width:100%}
+h3{margin:4px 0 8px;font-size:14px}
+.tip{color:var(--mut);font-size:12px;margin-top:10px}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+select{background:#10121a;color:var(--txt);border:1px solid var(--line);border-radius:4px;padding:3px;font:inherit;min-width:0;width:100%}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:10}
+#modal[hidden]{display:none}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(680px,94vw);max-height:90vh;display:flex;flex-direction:column;padding:14px}
+#mList{overflow:auto;flex:1;margin:8px 0}
+.mrow{display:grid;grid-template-columns:20px 44px 1fr 190px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.mrow small{color:var(--mut)}
+.mrow .thumb canvas{max-width:100%;max-height:100%}
+.mfoot{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+@media(max-width:860px){body{height:auto}main{grid-template-columns:1fr;display:block}#stage{height:70vh}aside{max-height:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🦴 Lắp khung xương tướng</h1>
+  <input type="text" id="cname" value="tuong_01" title="Tên tướng">
+  <label class="btn primary">Mở PSD (tự tách + gắn)<input type="file" id="psdIn" accept=".psd,.psb" hidden></label>
+  <label class="btn">Chọn nhiều ảnh<input type="file" id="multi" accept="image/*" multiple hidden></label>
+  <label class="chk">Góc nhìn <select id="viewSel"><option value="front">Chính diện</option><option value="left">Nghiêng trái 90°</option><option value="right">Nghiêng phải 90°</option></select></label>
+  <button id="bSave">Lưu dự án</button>
+  <label class="btn">Mở dự án<input type="file" id="bLoad" accept=".json" hidden></label>
+  <button id="bPng">Xuất PNG</button>
+  <button id="bZip" class="primary">Xuất tướng (.zip)</button>
+  <label class="chk"><input type="checkbox" id="cBones" checked>Xương</label>
+  <label class="chk"><input type="checkbox" id="cGrid" checked>Lưới</label>
+  </header>
+<main>
+  <aside id="list"></aside>
+  <section id="stage">
+    <div id="cvwrap"><canvas id="cv"></canvas></div>
+    <div id="anbar">
+      <div class="anrow"><b>Chuyển động</b><select id="anSel"></select><button id="anPlay">▶</button><button id="anNew">Mới</button><button id="anDup">Nhân bản</button><button id="anDel">Xóa</button><button id="anRst">Khôi phục mẫu</button></div>
+      <div class="anrow"><label class="chk"><input type="checkbox" id="anLoop">Lặp</label><label class="chk" title="Chuyển đều giữa các keyframe, không giảm tốc ở mỗi mốc"><input type="checkbox" id="anLin">Chuyển đều</label><label class="chk">Thời lượng (s) <input type="number" id="anDur" step="0.1" min="0.1" value="1" style="width:64px"></label><label class="chk">Tốc độ <input type="range" id="anSpd" min="0.25" max="2" step="0.05" value="1"><span id="anSpdV">1x</span></label></div>
+      <div class="anrow"><input type="range" id="anT" min="0" max="1" step="0.01" value="0"><span id="anTv" style="min-width:90px;color:var(--mut)"></span><button id="anKey">＋ Ghi keyframe</button><button id="anKdel">Xóa key</button><button id="anZero">Về tư thế gốc</button></div>
+      <div class="anrow" id="anKeys"></div>
+      <div class="anrow"><span style="color:var(--mut)">Cả người:</span> X <input type="range" id="rX" min="-300" max="300" step="1" value="0"> Y <input type="range" id="rY" min="-300" max="300" step="1" value="0"> Xoay <input type="range" id="rR" min="-360" max="360" step="1" value="0"> Lật ngang <input type="range" id="rS" min="-2" max="0" step="0.01" value="0"></div>
+      <div class="tip" style="margin:0">Tự tạo động tác: kéo thanh thời gian tới mốc cần → chọn bộ phận, chỉnh “Xoay động tác” ở bảng bên phải → bấm “Ghi keyframe”. Lặp lại ở các mốc khác rồi bấm ▶.</div>
+    </div>
+  </section>
+  <aside id="props"></aside>
+</main>
+<div id="modal" hidden><div class="mbox">
+  <h3 id="mTitle" style="margin:0">PSD</h3>
+  <div id="mList"></div>
+  <div class="mfoot">
+    <label class="chk"><input type="checkbox" id="mPos" checked>Xếp theo vị trí trong PSD</label>
+    <button id="mCancel">Hủy</button>
+    <button id="mOk" class="primary">Gắn vào khung xương</button>
+  </div>
+</div></div>
+
+<script>
+const W=600,H=800,ROOT={x:300,y:470};
+// id, tên, cha, x, y, pivotX, pivotY, chiều cao, z
+const DEFS=[
+['cape','Áo choàng / tóc sau','torso',0,-150,.5,.05,300,1],
+['thighL','Đùi trái','root',-30,20,.5,.08,140,2],
+['shinL','Cẳng chân trái','thighL',0,130,.5,.08,140,2],
+['thighR','Đùi phải','root',30,20,.5,.08,140,2],
+['shinR','Cẳng chân phải','thighR',0,130,.5,.08,140,2],
+['pelvis','Hông','root',0,0,.5,.5,80,3],
+['torso','Thân','root',0,-20,.5,1,180,4],
+['armL','Cánh tay trái','torso',-60,-150,.5,.08,110,5],
+['forearmL','Cẳng tay trái','armL',0,100,.5,.08,110,5],
+['armR','Cánh tay phải','torso',60,-150,.5,.08,110,5],
+['forearmR','Cẳng tay phải','armR',0,100,.5,.08,110,5],
+['head','Đầu','torso',0,-170,.5,.9,130,6],
+['weapon','Vũ khí','forearmR',0,100,.5,.75,250,7]
+];
+const parts=DEFS.map(d=>({id:d[0],name:d[1],parent:d[2],x:d[3],y:d[4],px:d[5],py:d[6],h:d[7],z:d[8],rot:0,sc:1,flip:false,vis:true,img:null,src:null,def:d}));
+const byId={};parts.forEach(p=>byId[p.id]=p);
+let sel='torso',lastB={},drag=null;
+const $=s=>document.querySelector(s);
+const cv=$('#cv'),ctx=cv.getContext('2d');
+const DPR=Math.min(2,window.devicePixelRatio||1);
+cv.width=W*DPR;cv.height=H*DPR;
+
+function setSrc(p,src){return new Promise(res=>{
+  if(!src){p.img=null;p.src=null;return res();}
+  const im=new Image();im.onload=()=>{p.img=im;p.src=src;res();};im.onerror=()=>res();im.src=src;});}
+function loadFile(p,file){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>setSrc(p,fr.result).then(res);fr.readAsDataURL(file);});}
+const norm=s=>s.toLowerCase().replace(/\.[^.]+$/,'').replace(/[^a-z0-9]/g,'');
+
+function dims(p){
+  if(p.img){const s=p.h/p.img.height*p.sc;return[p.img.width*s,p.img.height*s];}
+  return[p.h*.4*p.sc,p.h*p.sc];
+}
+function animOffsets(t){
+  return{torso:Math.sin(t*2)*1.2,head:Math.sin(t*2+1)*2,armL:Math.sin(t*2)*5,armR:-Math.sin(t*2)*5,
+    forearmL:Math.sin(t*2+.6)*4,forearmR:-Math.sin(t*2+.6)*4,cape:Math.sin(t*2+2)*3,thighL:Math.sin(t*2)*2,thighR:-Math.sin(t*2)*2};
+}
+function matrices(anim){
+  const c={};
+  const sg=view==='right'?-1:1;
+  c.__root=new DOMMatrix().translate(ROOT.x+sg*(anim.rootX||0),ROOT.y+(anim.rootY||0)).rotate(sg*(anim.rootR||0)).scale(sg*(1+(anim.rootSX||0)),1);
+  function B(p){
+    if(c[p.id])return c[p.id];
+    const pm=p.parent==='root'?c.__root:B(byId[p.parent]);
+    return c[p.id]=pm.translate(p.x,p.y).rotate((p.rot||0)+(anim[p.id]||0));
+  }
+  parts.forEach(B);return c;
+}
+function draw(g,o){
+  const dpr=o.dpr,B=matrices(o.anim||{});
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W*dpr,H*dpr);
+  const base=new DOMMatrix().scale(dpr);
+  if(o.guides&&o.grid){
+    g.setTransform(base);g.strokeStyle='rgba(255,255,255,.06)';g.lineWidth=1;g.beginPath();
+    for(let x=0;x<=W;x+=50){g.moveTo(x,0);g.lineTo(x,H);}
+    for(let y=0;y<=H;y+=50){g.moveTo(0,y);g.lineTo(W,y);}
+    g.stroke();
+    g.strokeStyle='rgba(247,37,133,.5)';g.beginPath();g.moveTo(0,ROOT.y+160+140-30);g.lineTo(W,ROOT.y+160+140-30);g.stroke();
+  }
+  const order=parts.map((p,i)=>[p,i]).sort((a,b)=>a[0].z-b[0].z||a[1]-b[1]);
+  for(const[p]of order){
+    if(!p.vis)continue;
+    const[w,h]=dims(p);
+    g.setTransform(base.multiply(B[p.id]));
+    g.scale(p.flip?-1:1,1);
+    if(p.img){g.drawImage(p.img,-p.px*w,-p.py*h,w,h);}
+    else if(o.guides){
+      g.fillStyle=p.id===sel?'rgba(76,201,240,.18)':'rgba(255,255,255,.06)';
+      g.strokeStyle='rgba(255,255,255,.25)';g.setLineDash([5,4]);
+      g.fillRect(-p.px*w,-p.py*h,w,h);g.strokeRect(-p.px*w,-p.py*h,w,h);g.setLineDash([]);
+      g.fillStyle='rgba(255,255,255,.45)';g.font='11px system-ui';g.textAlign='center';
+      const rm=B.__root,neg=((rm.a*rm.d-rm.b*rm.c)<0)!==!!p.flip;
+      if(neg){g.save();g.scale(-1,1);g.fillText(p.name,-(.5-p.px)*w,(.5-p.py)*h);g.restore();}
+      else g.fillText(p.name,(.5-p.px)*w,(.5-p.py)*h);
+    }
+  }
+  if(o.guides){
+    g.setTransform(base);
+    if(o.bones){
+      g.strokeStyle='rgba(76,201,240,.7)';g.fillStyle='#4cc9f0';g.lineWidth=2;
+      for(const p of parts){
+        const m=B[p.id];const pm=p.parent==='root'?B.__root:B[p.parent];
+        g.beginPath();g.moveTo(pm.e,pm.f);g.lineTo(m.e,m.f);g.stroke();
+        g.beginPath();g.arc(m.e,m.f,3,0,7);g.fill();
+      }
+    }
+    const p=byId[sel];
+    if(p){
+      const[w,h]=dims(p);
+      g.setTransform(base.multiply(B[p.id]));g.scale(p.flip?-1:1,1);
+      g.strokeStyle='#f72585';g.lineWidth=1.5;g.strokeRect(-p.px*w,-p.py*h,w,h);
+      g.setTransform(base);const m=B[p.id];
+      g.fillStyle='#f72585';g.beginPath();g.arc(m.e,m.f,6,0,7);g.fill();
+      g.strokeStyle='#fff';g.lineWidth=1.5;g.stroke();
+    }
+  }
+  return B;
+}
+function frame(now){
+  const dt=Math.min(.1,((now||lastT)-lastT)/1000);lastT=now||lastT;
+  if(playing){
+    const a=anims[curAnim];ptime+=dt*speed;
+    if(a.loop)ptime%=a.dur;
+    else if(ptime>=a.dur){ptime=a.dur;playing=false;$('#anPlay').textContent='▶';}
+    curPose=sample(a,ptime);syncAn();
+  }
+  lastB=draw(ctx,{guides:true,dpr:DPR,grid:$('#cGrid').checked,bones:$('#cBones').checked,anim:curPose});
+  requestAnimationFrame(frame);
+}
+
+// ---------- chọn / kéo ----------
+function pt(e){const r=cv.getBoundingClientRect();return new DOMPoint((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height);}
+function parentM(p){return p.parent==='root'?lastB.__root:lastB[p.parent];}
+function hit(q){
+  const order=parts.map((p,i)=>[p,i]).sort((a,b)=>b[0].z-a[0].z||b[1]-a[1]);
+  for(const[p]of order){
+    if(!p.vis)continue;
+    const l=lastB[p.id].inverse().transformPoint(q);
+    const[w,h]=dims(p);const x=p.flip?-l.x:l.x;
+    if(x>=-p.px*w&&x<=(1-p.px)*w&&l.y>=-p.py*h&&l.y<=(1-p.py)*h)return p;
+  }
+  return null;
+}
+cv.addEventListener('pointerdown',e=>{
+  const q=pt(e);
+  let p=hit(q);
+  if(!p)return;
+  select(p.id);
+  const l=parentM(p).inverse().transformPoint(q);
+  drag={id:p.id,sx:p.x,sy:p.y,l0:l,PM:parentM(p)};
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const p=byId[drag.id];const l=drag.PM.inverse().transformPoint(pt(e));
+  p.x=Math.round(drag.sx+l.x-drag.l0.x);p.y=Math.round(drag.sy+l.y-drag.l0.y);
+  syncProps();
+});
+cv.addEventListener('pointerup',()=>drag=null);
+window.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;
+  const p=byId[sel],s=e.shiftKey?10:1;
+  const k={ArrowLeft:[-s,0],ArrowRight:[s,0],ArrowUp:[0,-s],ArrowDown:[0,s]}[e.key];
+  if(k){p.x+=k[0];p.y+=k[1];syncProps();e.preventDefault();}
+});
+
+// ---------- danh sách bộ phận ----------
+function buildList(){
+  const L=$('#list');L.innerHTML='<h3>Bộ phận</h3>';
+  parts.forEach(p=>{
+    const d=document.createElement('div');d.className='item'+(p.id===sel?' sel':'');d.dataset.id=p.id;
+    d.innerHTML='<div class="thumb">'+(p.src?'<img src="'+p.src+'">':'')+'</div><div class="nm"><b>'+p.name+'</b><small class="'+(p.src?'ok':'')+'">'+(p.src?'✓ đã có ảnh':'kéo thả ảnh vào đây')+'</small></div>';
+    const f=document.createElement('input');f.type='file';f.accept='image/*';f.hidden=true;d.appendChild(f);
+    const b=document.createElement('button');b.textContent='Ảnh';b.onclick=ev=>{ev.stopPropagation();f.click();};d.appendChild(b);
+    f.onchange=async()=>{if(f.files[0]){await loadFile(p,f.files[0]);select(p.id);}};
+    d.onclick=()=>select(p.id);
+    d.ondragover=ev=>{ev.preventDefault();d.classList.add('drop');};
+    d.ondragleave=()=>d.classList.remove('drop');
+    d.ondrop=async ev=>{ev.preventDefault();d.classList.remove('drop');const fl=ev.dataTransfer.files[0];if(fl){await loadFile(p,fl);select(p.id);}};
+    L.appendChild(d);
+  });
+  const t=document.createElement('div');t.className='tip';
+  t.innerHTML='Mẹo: đặt tên file trùng mã bộ phận (head, torso, armL, forearmL, armR, forearmR, thighL, shinL, thighR, shinR, pelvis, cape, weapon) rồi bấm <b>Chọn nhiều ảnh</b> để tự gắn.';
+  L.appendChild(t);
+}
+function select(id){sel=id;buildList();buildProps();}
+
+// ---------- bảng thuộc tính ----------
+const FIELDS=[['x','X',-600,600,1],['y','Y',-600,600,1],['rot','Xoay (độ)',-180,180,1],['sc','Tỉ lệ',.1,3,.01],['h','Cao gốc (px)',10,800,1],['px','Tâm xoay X',0,1,.01],['py','Tâm xoay Y',0,1,.01],['z','Lớp (z)',-5,20,1]];
+function buildProps(){
+  const P=$('#props'),p=byId[sel];P.innerHTML='<h3>'+p.name+' <small style="color:var(--mut)">('+p.id+')</small></h3>';
+  FIELDS.forEach(([k,lab,mn,mx,st])=>{
+    const r=document.createElement('div');r.className='row';
+    r.innerHTML='<span>'+lab+'</span><input type="range" min="'+mn+'" max="'+mx+'" step="'+st+'" data-k="'+k+'"><input type="number" step="'+st+'" data-k="'+k+'">';
+    r.querySelectorAll('input').forEach(i=>i.oninput=()=>{p[k]=parseFloat(i.value)||0;if(k==='z'||true)syncProps(i);});
+    P.appendChild(r);
+  });
+  const pr=document.createElement('div');pr.className='row';
+  pr.innerHTML='<span>Xoay động tác</span><input type="range" min="-180" max="180" step="1" data-pk="1"><input type="number" step="1" data-pk="1">';
+  pr.querySelectorAll('input').forEach(i=>i.oninput=()=>{curPose[p.id]=parseFloat(i.value)||0;syncProps(i);});
+  P.appendChild(pr);
+  const c=document.createElement('div');c.style.cssText='display:flex;gap:14px;margin:8px 0';
+  c.innerHTML='<label class="chk"><input type="checkbox" id="pFlip">Lật ngang</label><label class="chk"><input type="checkbox" id="pVis">Hiện</label>';
+  P.appendChild(c);
+  $('#pFlip').onchange=e=>p.flip=e.target.checked;
+  $('#pVis').onchange=e=>p.vis=e.target.checked;
+  const b=document.createElement('div');b.className='btns';
+  b.innerHTML='<button id="pRm">Xóa ảnh</button><button id="pRs">Đặt lại vị trí</button>';
+  P.appendChild(b);
+  $('#pRm').onclick=async()=>{await setSrc(p,null);select(p.id);};
+  $('#pRs').onclick=()=>{const d=p.def;Object.assign(p,{x:d[3],y:d[4],px:d[5],py:d[6],h:d[7],z:d[8],rot:0,sc:1,flip:false,vis:true});buildProps();};
+  const t=document.createElement('div');t.className='tip';
+  t.innerHTML='Kéo trực tiếp bộ phận trên khung để di chuyển (phím mũi tên để nhích 1px, Shift = 10px). Chấm hồng là khớp/tâm xoay — chỉnh “Tâm xoay” để đặt khớp đúng chỗ (vai, khuỷu, hông…). Xương con đi theo xương cha.';
+  P.appendChild(t);
+  syncProps();
+}
+function syncProps(skip){
+  const p=byId[sel];
+  document.querySelectorAll('#props input[data-k]').forEach(i=>{if(i!==skip)i.value=p[i.dataset.k];});
+  document.querySelectorAll('#props input[data-pk]').forEach(i=>{if(i!==skip)i.value=Math.round((curPose[p.id]||0)*10)/10;});
+  const f=$('#pFlip'),v=$('#pVis');if(f)f.checked=p.flip;if(v)v.checked=p.vis;
+}
+
+// ---------- xuất ----------
+const rnd=n=>Math.round(n*1000)/1000;
+function buildJSON(paths){
+  const name=$('#cname').value.trim()||'tuong';
+  return{format:'tuong-rig',version:1,name,
+    note:'Toa do pixel, truc y huong xuong, goc xoay theo do (chieu kim dong ho). x,y la vi tri khop so voi khop cha. Anh duoc ve voi chieu cao = length*scale, tam xoay = pivot (ti le 0..1 trong anh). z lon hon ve sau.',
+    canvas:{width:W,height:H},root:{x:ROOT.x,y:ROOT.y},
+    view:view,viewNote:'front = chinh dien; left = nghieng 90 do, nhan vat quay mat sang trai; right = ban lat guong cua left (root.scaleX am trong animations, lat quanh vi tri root).',
+    bones:parts.map(p=>{
+      const[dw,dh]=dims(p);
+      return{id:p.id,name:p.name,parent:p.parent==='root'?null:p.parent,x:rnd(p.x),y:rnd(p.y),rotation:rnd(p.rot),
+        scale:rnd(p.sc),flipX:p.flip,visible:p.vis,z:p.z,length:p.h,pivot:{x:rnd(p.px),y:rnd(p.py)},
+        image:p.img?(paths?'parts/'+p.id+'.png':p.src):null,
+        imageSize:p.img?{width:p.img.width,height:p.img.height}:null,
+        drawSize:p.img?{width:rnd(dw),height:rnd(dh)}:null};
+    }),
+    animationNote:'rotation trong animations la do lech (do) cong them vao rotation cua xuong. root.x, root.y la do lech pixel cua ca nhan vat, root.rotation xoay quanh hong. keys noi suy smoothstep; loop thi sau key cuoi quay ve key dau. frames = du lieu da bake san 30 fps.',
+    animations:exportAnims()};
+}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);}
+function previewCanvas(){const c=document.createElement('canvas');c.width=W;c.height=H;draw(c.getContext('2d'),{guides:false,dpr:1,anim:{}});return c;}
+const toBlob=c=>new Promise(r=>c.toBlob(r,'image/png'));
+const T=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=-1;for(let i=0;i<b.length;i++)c=T[(c^b[i])&255]^(c>>>8);return(c^-1)>>>0;}
+function makeZip(files){
+  const enc=new TextEncoder(),chunks=[],cen=[];let off=0;
+  for(const f of files){
+    const nb=enc.encode(f.name),crc=crc32(f.data),n=f.data.length;
+    const l=new Uint8Array(30+nb.length),v=new DataView(l.buffer);
+    v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0x0800,true);v.setUint16(12,0x21,true);
+    v.setUint32(14,crc,true);v.setUint32(18,n,true);v.setUint32(22,n,true);v.setUint16(26,nb.length,true);l.set(nb,30);
+    const c=new Uint8Array(46+nb.length),w=new DataView(c.buffer);
+    w.setUint32(0,0x02014b50,true);w.setUint16(4,20,true);w.setUint16(6,20,true);w.setUint16(8,0x0800,true);w.setUint16(14,0x21,true);
+    w.setUint32(16,crc,true);w.setUint32(20,n,true);w.setUint32(24,n,true);w.setUint16(28,nb.length,true);w.setUint32(42,off,true);c.set(nb,46);
+    chunks.push(l,f.data);cen.push(c);off+=l.length+n;
+  }
+  const cs=cen.reduce((a,c)=>a+c.length,0),e=new Uint8Array(22),ev=new DataView(e.buffer);
+  ev.setUint32(0,0x06054b50,true);ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);ev.setUint32(12,cs,true);ev.setUint32(16,off,true);
+  return new Blob([...chunks,...cen,e],{type:'application/zip'});
+}
+async function exportZip(){
+  const files=[],enc=new TextEncoder();
+  files.push({name:'character.json',data:enc.encode(JSON.stringify(buildJSON(true),null,2))});
+  for(const p of parts){
+    if(!p.img)continue;
+    const c=document.createElement('canvas');c.width=p.img.width;c.height=p.img.height;c.getContext('2d').drawImage(p.img,0,0);
+    files.push({name:'parts/'+p.id+'.png',data:new Uint8Array(await(await toBlob(c)).arrayBuffer())});
+  }
+  files.push({name:'preview.png',data:new Uint8Array(await(await toBlob(previewCanvas())).arrayBuffer())});
+  dl(makeZip(files),($('#cname').value.trim()||'tuong')+'.zip');
+}
+
+// ---------- lưu / mở dự án ----------
+function saveProject(){
+  const o=buildJSON(false);o.format='tuong-project';o.rawAnims=anims;
+  dl(new Blob([JSON.stringify(o)],{type:'application/json'}),($('#cname').value.trim()||'tuong')+'.project.json');
+}
+async function openProject(file){
+  try{
+    const o=JSON.parse(await file.text());
+    if(!o.bones)throw 0;
+    $('#cname').value=o.name||'tuong';
+    for(const b of o.bones){
+      const p=byId[b.id];if(!p)continue;
+      Object.assign(p,{x:b.x,y:b.y,rot:b.rotation,sc:b.scale,flip:!!b.flipX,vis:b.visible!==false,z:b.z,h:b.length,px:b.pivot.x,py:b.pivot.y});
+      await setSrc(p,b.image&&b.image.startsWith('data:')?b.image:null);
+    }
+    if(o.view==='left'||o.view==='right'||o.view==='front'){view=o.view;$('#viewSel').value=view;}
+    if(o.bones)o.bones.forEach(b=>{const p=byId[b.id];if(p&&b.parent)p.parent=b.parent;});
+    if(o.rawAnims&&typeof o.rawAnims==='object'&&Object.keys(o.rawAnims).length){anims=o.rawAnims;anSelect(Object.keys(anims)[0]);}
+    select(sel);
+  }catch(e){alert('File dự án không hợp lệ.');}
+}
+
+// ---------- chuyển động ----------
+// pose = độ lệch xoay (độ) cộng thêm vào xương; rootX/rootY/rootR = dịch chuyển/xoay cả người
+function builtinAnims(){
+  const mk=(dur,loop,ks)=>({dur,loop,keys:ks.map(([t,pose])=>({t,pose}))});
+  return{
+    'Đứng yên (idle)':mk(1.6,true,[
+      [0,{armL:3,armR:-3,forearmL:2,forearmR:-2}],
+      [.8,{torso:1.5,head:2,armL:5,armR:-5,forearmL:4,forearmR:-4,cape:2,rootY:-2}]]),
+    'Đi bộ':mk(.9,true,[
+      [0,{thighL:28,shinL:5,thighR:-20,shinR:15,armL:-22,armR:22,forearmL:-10,forearmR:10,torso:2,cape:3}],
+      [.225,{thighL:4,shinL:8,thighR:4,shinR:40,rootY:-4,cape:6}],
+      [.45,{thighL:-20,shinL:15,thighR:28,shinR:5,armL:22,armR:-22,forearmL:10,forearmR:-10,torso:-2,cape:3}],
+      [.675,{thighL:4,shinL:40,thighR:4,shinR:8,rootY:-4,cape:6}]]),
+    'Chạy':mk(.6,true,[
+      [0,{thighL:50,shinL:20,thighR:-35,shinR:70,armL:-55,armR:55,forearmL:-50,forearmR:50,torso:8,rootY:-4,cape:10}],
+      [.15,{thighL:10,shinL:15,thighR:10,shinR:90,forearmL:-50,forearmR:50,torso:8,rootY:-14,cape:15}],
+      [.3,{thighL:-35,shinL:70,thighR:50,shinR:20,armL:55,armR:-55,forearmL:50,forearmR:-50,torso:8,rootY:-4,cape:10}],
+      [.45,{thighL:10,shinL:90,thighR:10,shinR:15,forearmL:50,forearmR:-50,torso:8,rootY:-14,cape:15}]]),
+    'Tấn công':mk(.7,false,[
+      [0,{}],
+      [.15,{armR:-150,forearmR:-30,torso:-10,head:-5,rootX:-6}],
+      [.3,{armR:25,forearmR:35,torso:14,head:5,rootX:12,weapon:10}],
+      [.5,{armR:15,forearmR:20,torso:8,rootX:8}],
+      [.7,{}]]),
+    'Nhảy':mk(1,false,[
+      [0,{armL:10,armR:-10}],
+      [.15,{rootY:14,thighL:25,thighR:-25,shinL:-45,shinR:45,torso:5,armL:25,armR:-25}],
+      [.35,{rootY:-70,thighL:8,thighR:-8,shinL:15,shinR:-15,armL:100,armR:-100}],
+      [.55,{rootY:-90,thighL:20,thighR:-20,shinL:-40,shinR:40,armL:140,armR:-140}],
+      [.8,{rootY:6,thighL:15,thighR:-15,shinL:-30,shinR:30,armL:20,armR:-20}],
+      [1,{}]]),
+    'Lộn vòng (xoay 360°)':Object.assign(mk(1.2,false,[
+      [0,{}],[.3,{rootR:90,rootY:-75}],[.6,{rootR:180,rootY:-100}],[.9,{rootR:270,rootY:-75}],[1.2,{rootR:360}]]),{lin:true}),
+    'Xoay ngang 360° (bàn xoay)':Object.assign(mk(1.6,true,
+      Array.from({length:13},(_,i)=>[Math.round(i/12*160)/100,{rootSX:Math.round((Math.cos(i*Math.PI/6)-1)*1000)/1000}])),{lin:true}),
+    'Bị đánh':mk(.4,false,[
+      [0,{}],
+      [.1,{torso:-14,head:-18,rootX:-14,armL:15,armR:-15}],
+      [.4,{}]]),
+    'Chết':mk(1.2,false,[
+      [0,{}],
+      [.25,{torso:-12,head:-15,rootX:-10,armL:30,armR:-30}],
+      [.7,{rootR:50,rootY:90,rootX:-10,armL:60,armR:-60,thighL:15,thighR:-10,shinL:20,shinR:15}],
+      [1.2,{rootR:86,rootY:250,rootX:-20,armL:60,armR:-60,thighL:12,thighR:-8,shinL:10,shinR:15,head:10}]]),
+    'Đứng nghiêng (idle)':mk(1.6,true,[
+      [0,{armL:4,armR:-4,forearmL:6,forearmR:6,cape:-3}],
+      [.8,{torso:-1.5,head:2,armL:7,armR:-6,forearmL:10,forearmR:9,cape:-6,rootY:-2}]]),
+    'Đi bộ nghiêng':mk(.9,true,[
+      [0,{thighL:28,shinL:-4,thighR:-22,shinR:-30,armL:-25,armR:25,forearmL:8,forearmR:25,torso:-3,cape:-8}],
+      [.225,{thighL:4,shinL:-2,thighR:10,shinR:-55,armL:-5,armR:5,forearmL:10,forearmR:15,torso:-3,rootY:-4,cape:-14}],
+      [.45,{thighL:-22,shinL:-30,thighR:28,shinR:-4,armL:25,armR:-25,forearmL:25,forearmR:8,torso:-3,cape:-8}],
+      [.675,{thighL:10,shinL:-55,thighR:4,shinR:-2,armL:5,armR:-5,forearmL:15,forearmR:10,torso:-3,rootY:-4,cape:-14}]]),
+    'Chạy nghiêng':mk(.6,true,[
+      [0,{thighL:55,shinL:-15,thighR:-40,shinR:-80,armL:-60,armR:60,forearmL:70,forearmR:90,torso:-10,rootY:-4,cape:-20}],
+      [.15,{thighL:10,shinL:-10,thighR:20,shinR:-110,forearmL:80,forearmR:80,torso:-10,rootY:-16,cape:-28}],
+      [.3,{thighL:-40,shinL:-80,thighR:55,shinR:-15,armL:60,armR:-60,forearmL:90,forearmR:70,torso:-10,rootY:-4,cape:-20}],
+      [.45,{thighL:20,shinL:-110,thighR:10,shinR:-10,forearmL:80,forearmR:80,torso:-10,rootY:-16,cape:-28}]]),
+    'Tấn công nghiêng':mk(.7,false,[
+      [0,{}],
+      [.15,{armR:-150,forearmR:-30,torso:8,head:4,rootX:6,armL:20}],
+      [.3,{armR:85,forearmR:25,torso:-16,head:-6,rootX:-16,weapon:15,armL:-30}],
+      [.5,{armR:60,forearmR:15,torso:-10,rootX:-10}],
+      [.7,{}]]),
+    'Nhảy nghiêng':mk(1,false,[
+      [0,{}],
+      [.15,{rootY:30,thighL:45,thighR:40,shinL:-80,shinR:-75,torso:-15,armL:-40,armR:-40,forearmL:30,forearmR:30}],
+      [.35,{rootY:-70,thighL:15,thighR:-10,shinL:-20,shinR:-25,armL:110,armR:100,torso:-5}],
+      [.55,{rootY:-90,thighL:55,thighR:45,shinL:-90,shinR:-85,armL:80,armR:70,torso:-8}],
+      [.8,{rootY:14,thighL:35,thighR:30,shinL:-60,shinR:-55,torso:-10,armL:20,armR:15}],
+      [1,{}]]),
+    'Bị đánh nghiêng':mk(.4,false,[
+      [0,{}],
+      [.1,{torso:14,head:18,rootX:14,armL:-15,armR:-20,forearmL:20}],
+      [.4,{}]]),
+    'Chết nghiêng':mk(1.2,false,[
+      [0,{}],
+      [.25,{torso:12,head:15,rootX:10,armL:-30,armR:-30}],
+      [.7,{rootR:50,rootY:90,rootX:10,armL:-60,armR:-60,thighL:20,thighR:10,shinL:-20,shinR:-15}],
+      [1.2,{rootR:86,rootY:250,rootX:20,armL:-60,armR:-60,thighL:15,thighR:10,shinL:-10,shinR:-10,head:-10}]])
+  };
+}
+let anims=builtinAnims(),curAnim='Đứng yên (idle)',curPose={},playing=false,ptime=0,speed=1,lastT=performance.now();
+function sample(a,t){
+  const ks=a.keys;if(!ks.length)return{};
+  if(a.loop)t=((t%a.dur)+a.dur)%a.dur;else t=Math.max(0,Math.min(a.dur,t));
+  let i0=-1;for(let i=0;i<ks.length;i++)if(ks[i].t<=t)i0=i;
+  let A,B,ta,tb;
+  if(i0<0){A=ks[ks.length-1];B=ks[0];if(!a.loop)return Object.assign({},B.pose);ta=A.t-a.dur;tb=B.t;}
+  else if(i0===ks.length-1){A=ks[i0];if(!a.loop)return Object.assign({},A.pose);B=ks[0];ta=A.t;tb=B.t+a.dur;}
+  else{A=ks[i0];B=ks[i0+1];ta=A.t;tb=B.t;}
+  const f=tb>ta?(t-ta)/(tb-ta):0,e=a.lin?f:f*f*(3-2*f),out={};
+  new Set(Object.keys(A.pose).concat(Object.keys(B.pose))).forEach(k=>{const x=A.pose[k]||0,y=B.pose[k]||0;out[k]=x+(y-x)*e;});
+  return out;
+}
+function splitPose(p){
+  const rot={};Object.keys(p).forEach(k=>{if(!/^root(X|Y|R|SX)$/.test(k))rot[k]=rnd(p[k]);});
+  const sg=view==='right'?-1:1;
+  return{rotation:rot,root:{x:rnd(sg*(p.rootX||0)),y:rnd(p.rootY||0),rotation:rnd(sg*(p.rootR||0)),scaleX:rnd(sg*(1+(p.rootSX||0)))}};
+}
+function exportAnims(){
+  return Object.entries(anims).map(([name,a])=>{
+    const n=Math.max(1,Math.round(a.dur*30))+(a.loop?0:1),frames=[];
+    for(let i=0;i<n;i++)frames.push(splitPose(sample(a,Math.min(i/30,a.dur))));
+    return{name,duration:a.dur,loop:a.loop,interpolation:a.lin?'linear':'smoothstep',fps:30,
+      keys:a.keys.map(k=>Object.assign({time:k.t},splitPose(k.pose))),frames};
+  });
+}
+function anList(){
+  const s=$('#anSel');s.innerHTML='';
+  Object.keys(anims).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;s.appendChild(o);});
+  s.value=curAnim;
+}
+function anStop(){playing=false;$('#anPlay').textContent='▶';}
+function anSelect(n){
+  curAnim=n;const a=anims[n];anStop();ptime=0;curPose=sample(a,0);
+  $('#anLoop').checked=a.loop;$('#anLin').checked=!!a.lin;$('#anDur').value=a.dur;$('#anT').max=a.dur;
+  anKeys();anList();syncAn();
+}
+function anKeys(){
+  const c=$('#anKeys');c.innerHTML='';
+  anims[curAnim].keys.forEach(k=>{
+    const b=document.createElement('button');b.className='kc';b.textContent=k.t.toFixed(2)+'s';
+    b.onclick=()=>{anStop();ptime=k.t;curPose=sample(anims[curAnim],ptime);syncAn();};
+    c.appendChild(b);
+  });
+}
+function syncAn(){
+  $('#anT').value=ptime;$('#anTv').textContent=ptime.toFixed(2)+' / '+anims[curAnim].dur+'s';
+  $('#rX').value=curPose.rootX||0;$('#rY').value=curPose.rootY||0;$('#rR').value=curPose.rootR||0;$('#rS').value=curPose.rootSX||0;
+  syncProps();
+}
+$('#anSel').onchange=e=>anSelect(e.target.value);
+$('#anPlay').onclick=()=>{
+  if(playing){anStop();return;}
+  const a=anims[curAnim];if(!a.loop&&ptime>=a.dur)ptime=0;
+  playing=true;$('#anPlay').textContent='⏸';
+};
+$('#anLoop').onchange=e=>{anims[curAnim].loop=e.target.checked;};
+$('#anLin').onchange=e=>{anims[curAnim].lin=e.target.checked;};
+$('#anDur').onchange=e=>{
+  const a=anims[curAnim],v=Math.max(.1,parseFloat(e.target.value)||1);
+  a.dur=v;a.keys.forEach(k=>k.t=Math.min(k.t,v));ptime=Math.min(ptime,v);
+  e.target.value=v;$('#anT').max=v;anKeys();syncAn();
+};
+$('#anSpd').oninput=e=>{speed=parseFloat(e.target.value);$('#anSpdV').textContent=speed+'x';};
+$('#anT').oninput=e=>{anStop();ptime=parseFloat(e.target.value);curPose=sample(anims[curAnim],ptime);syncAn();};
+$('#anKey').onclick=()=>{
+  const a=anims[curAnim],t=Math.round(Math.min(ptime,a.dur)*100)/100,pose={};
+  Object.keys(curPose).forEach(k=>{const v=Math.round(curPose[k]*10)/10;if(v)pose[k]=v;});
+  const ex=a.keys.find(k=>Math.abs(k.t-t)<.005);
+  if(ex)ex.pose=pose;else{a.keys.push({t,pose});a.keys.sort((x,y)=>x.t-y.t);}
+  anKeys();
+};
+$('#anKdel').onclick=()=>{
+  const a=anims[curAnim];if(a.keys.length<2)return;
+  const i=a.keys.findIndex(k=>Math.abs(k.t-ptime)<.01);if(i>=0){a.keys.splice(i,1);anKeys();}
+};
+$('#anZero').onclick=()=>{anStop();curPose={};syncAn();};
+$('#anNew').onclick=()=>{
+  const n=(prompt('Tên chuyển động mới:')||'').trim();if(!n)return;
+  if(anims[n]){alert('Tên này đã có.');return;}
+  anims[n]={dur:1,loop:true,keys:[{t:0,pose:{}}]};anSelect(n);
+};
+$('#anDup').onclick=()=>{
+  const n=(prompt('Tên bản sao:',curAnim+' (2)')||'').trim();if(!n)return;
+  if(anims[n]){alert('Tên này đã có.');return;}
+  anims[n]=JSON.parse(JSON.stringify(anims[curAnim]));anSelect(n);
+};
+$('#anDel').onclick=()=>{
+  if(Object.keys(anims).length<2){alert('Phải giữ lại ít nhất 1 chuyển động.');return;}
+  if(!confirm('Xóa chuyển động "'+curAnim+'"?'))return;
+  delete anims[curAnim];anSelect(Object.keys(anims)[0]);
+};
+$('#anRst').onclick=()=>{
+  const b=builtinAnims();
+  if(b[curAnim]){anims[curAnim]=b[curAnim];anSelect(curAnim);}
+  else alert('Đây là chuyển động do bạn tạo, không có bản mẫu để khôi phục.');
+};
+['rX','rY','rR','rS'].forEach(id=>{$('#'+id).oninput=e=>{curPose[{rX:'rootX',rY:'rootY',rR:'rootR',rS:'rootSX'}[id]]=parseFloat(e.target.value)||0;};});
+
+// ---------- góc nhìn ----------
+let view='front';
+const SIDE={cape:{x:10,z:1},thighL:{x:-4,z:5},shinL:{z:5},thighR:{x:4,z:2},shinR:{z:2},pelvis:{z:3},torso:{z:4},
+  armL:{x:-2,z:6},forearmL:{z:6},armR:{x:2,z:2.5},forearmR:{z:2.5},head:{z:7},weapon:{parent:'forearmL',z:6.5}};
+function applyLayout(side){
+  parts.forEach(p=>{
+    const d=p.def;p.parent=d[2];p.x=d[3];p.y=d[4];p.z=d[8];
+    if(side&&SIDE[p.id])Object.assign(p,SIDE[p.id]);
+  });
+}
+$('#viewSel').onchange=e=>{
+  const v=e.target.value,wasSide=view!=='front',isSide=v!=='front';
+  if(wasSide!==isSide){
+    if(!confirm('Đổi giữa góc chính diện và góc nghiêng sẽ đặt lại vị trí và thứ tự lớp (trước/sau) của tay, chân, vũ khí theo kiểu tương ứng. Tiếp tục?')){e.target.value=view;return;}
+    applyLayout(isSide);
+  }
+  view=v;
+  const b=builtinAnims();Object.keys(b).forEach(k=>{if(!anims[k])anims[k]=b[k];});
+  if(wasSide!==isSide)anSelect(isSide?'Đứng nghiêng (idle)':'Đứng yên (idle)');else syncAn();
+  select(sel);
+};
+
+// ---------- đọc PSD ----------
+const BIGKEYS=new Set(['LMsk','Lr16','Lr32','Layr','Mt16','Mt32','Mtrn','Alph','FMsk','lnk2','FEid','FXid','PxSD']);
+class PR{
+  constructor(buf){this.b=new Uint8Array(buf);this.v=new DataView(buf);this.p=0;}
+  u8(){return this.v.getUint8(this.p++);}
+  u16(){const x=this.v.getUint16(this.p);this.p+=2;return x;}
+  i16(){const x=this.v.getInt16(this.p);this.p+=2;return x;}
+  u32(){const x=this.v.getUint32(this.p);this.p+=4;return x;}
+  i32(){const x=this.v.getInt32(this.p);this.p+=4;return x;}
+  u64(){const hi=this.v.getUint32(this.p),lo=this.v.getUint32(this.p+4);this.p+=8;return hi*4294967296+lo;}
+  str(n){let s='';for(let i=0;i<n;i++)s+=String.fromCharCode(this.b[this.p+i]);this.p+=n;return s;}
+  skip32(){const n=this.u32();this.p+=n;}
+}
+async function inflate(u8){
+  const st=new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Uint8Array(await new Response(st).arrayBuffer());
+}
+function unpack(b,s,e,out,o){
+  let i=s;
+  while(i<e){
+    let n=b[i++];if(n>127)n-=256;
+    if(n>=0){for(let k=0;k<=n;k++)out[o++]=b[i++];}
+    else if(n!==-128){const v=b[i++];for(let k=0;k<1-n;k++)out[o++]=v;}
+  }
+}
+async function decodeChannel(r,w,h,len,depth,big){
+  const start=r.p,comp=r.u16(),bps=depth/8,rowB=w*bps;
+  const out=new Uint8Array(rowB*h),ds=r.p,dlen=len-2;
+  if(rowB*h>0){
+    if(comp===0){out.set(r.b.subarray(ds,ds+rowB*h));}
+    else if(comp===1){
+      let q=ds;const counts=[];
+      for(let y=0;y<h;y++){counts.push(big?r.v.getUint32(q):r.v.getUint16(q));q+=big?4:2;}
+      for(let y=0;y<h;y++){unpack(r.b,q,q+counts[y],out,y*rowB);q+=counts[y];}
+    }else if(comp===2||comp===3){
+      const raw=await inflate(r.b.subarray(ds,ds+dlen));
+      if(comp===3){
+        if(bps===1){for(let y=0;y<h;y++)for(let x=1;x<w;x++)raw[y*w+x]+=raw[y*w+x-1];}
+        else{const dv=new DataView(raw.buffer,raw.byteOffset,raw.byteLength);
+          for(let y=0;y<h;y++)for(let x=1;x<w;x++)dv.setUint16((y*w+x)*2,(dv.getUint16((y*w+x)*2)+dv.getUint16((y*w+x-1)*2))&0xFFFF);}
+      }
+      out.set(raw.subarray(0,rowB*h));
+    }else throw new Error('Kiểu nén kênh màu không hỗ trợ ('+comp+')');
+  }
+  r.p=start+len;
+  if(bps===2){const o8=new Uint8Array(w*h);for(let i=0;i<w*h;i++)o8[i]=out[i*2];return o8;}
+  return out;
+}
+async function parsePSD(buf,progress){
+  const r=new PR(buf);
+  if(r.str(4)!=='8BPS')throw new Error('Đây không phải file PSD/PSB.');
+  const ver=r.u16();if(ver!==1&&ver!==2)throw new Error('Phiên bản file không hỗ trợ.');
+  const big=ver===2;const L=()=>big?r.u64():r.u32();
+  r.p+=6;r.u16();const PH_=r.u32(),PW_=r.u32(),depth=r.u16(),mode=r.u16();
+  if(mode!==3&&mode!==1)throw new Error('Chỉ hỗ trợ chế độ màu RGB hoặc Grayscale. Trong Photoshop vào Image > Mode > RGB Color rồi lưu lại.');
+  if(depth!==8&&depth!==16)throw new Error('Chỉ hỗ trợ 8-bit hoặc 16-bit mỗi kênh. Đổi sang Image > Mode > 8 Bits/Channel rồi lưu lại.');
+  r.skip32();r.skip32();
+  const miscLen=L();if(miscLen===0)throw new Error('File này không có lớp nào (chỉ có 1 ảnh phẳng).');
+  const liLen=L();if(liLen===0)throw new Error('File này không có lớp nào (chỉ có 1 ảnh phẳng).');
+  const cnt=Math.abs(r.i16()),recs=[];
+  for(let i=0;i<cnt;i++){
+    const top=r.i32(),left=r.i32(),bottom=r.i32(),right=r.i32(),nc=r.u16(),chans=[];
+    for(let j=0;j<nc;j++){const id=r.i16();chans.push({id,len:L()});}
+    r.str(4);r.str(4);const opacity=r.u8();r.u8();const flags=r.u8();r.p++;
+    const exLen=r.u32(),exEnd=r.p+exLen;
+    r.skip32();r.skip32();
+    const nl=r.u8();let name=r.str(nl);r.p+=(4-((1+nl)%4))%4;
+    let uname=null,sect=0;
+    while(r.p+12<=exEnd){
+      r.str(4);const k=r.str(4);const len=(big&&BIGKEYS.has(k))?r.u64():r.u32();const st=r.p;
+      if(k==='luni'){const n=r.u32();let s='';for(let q=0;q<n;q++)s+=String.fromCharCode(r.u16());uname=s.replace(/\0+$/,'');}
+      else if(k==='lsct'){sect=r.u32();}
+      r.p=st+len;
+    }
+    r.p=exEnd;
+    recs.push({top,left,bottom,right,chans,opacity,visible:!(flags&2),name:uname||name,sect});
+  }
+  const out=[];
+  for(let i=0;i<recs.length;i++){
+    const rc=recs[i],w=rc.right-rc.left,h=rc.bottom-rc.top,data={};
+    progress('Đang đọc lớp '+(i+1)+'/'+recs.length+' …');
+    for(const ch of rc.chans){
+      if(w>0&&h>0&&ch.id>=-1)data[ch.id]=await decodeChannel(r,w,h,ch.len,depth,big);
+      else r.p+=ch.len;
+    }
+    if(rc.sect>=1&&rc.sect<=3)continue;
+    if(w<=0||h<=0)continue;
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const g=c.getContext('2d'),im=g.createImageData(w,h),d=im.data;
+    const A=data[-1],n=w*h;
+    if(mode===3){const Rr=data[0],Gg=data[1],Bb=data[2];
+      for(let k=0;k<n;k++){d[k*4]=Rr?Rr[k]:0;d[k*4+1]=Gg?Gg[k]:0;d[k*4+2]=Bb?Bb[k]:0;d[k*4+3]=A?A[k]:255;}}
+    else{const Y=data[0];for(let k=0;k<n;k++){const v=Y?Y[k]:0;d[k*4]=d[k*4+1]=d[k*4+2]=v;d[k*4+3]=A?A[k]:255;}}
+    g.putImageData(im,0,0);
+    out.push({name:rc.name,x:rc.left,y:rc.top,w,h,visible:rc.visible,on:false,canvas:c,part:''});
+  }
+  return{W:PW_,H:PH_,layers:out};
+}
+
+// ---------- hộp thoại gắn lớp PSD vào xương ----------
+let psdPending=null;
+const normName=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]/g,'');
+const ALIAS={head:['dau'],torso:['than','body'],pelvis:['hong','hip'],cape:['aochoang','cloak'],weapon:['vukhi','sword']};
+function autoMatchPsd(){
+  const ids=parts.map(p=>p.id).sort((a,b)=>b.length-a.length);
+  psdPending.layers.forEach(l=>{
+    const n=normName(l.name);
+    let m=ids.find(i=>normName(i)===n);
+    if(!m)for(const[k,al]of Object.entries(ALIAS))if(al.includes(n))m=k;
+    if(!m)m=ids.find(i=>n.includes(normName(i)));
+    l.part=m||'';l.on=!!m&&l.visible;
+  });
+}
+function thumbOf(c){
+  const t=document.createElement('canvas'),s=Math.min(44/c.width,44/c.height,1);
+  t.width=Math.max(1,Math.round(c.width*s));t.height=Math.max(1,Math.round(c.height*s));
+  t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t;
+}
+function buildModal(){
+  const res=psdPending,M=$('#mList');M.innerHTML='';
+  $('#mTitle').textContent='PSD: '+res.layers.length+' lớp, canvas '+res.W+'×'+res.H+' — chọn bộ phận cho từng lớp';
+  const opts=[['','— bỏ qua —']].concat(parts.map(p=>[p.id,p.name+' ('+p.id+')']));
+  for(let i=res.layers.length-1;i>=0;i--){
+    const l=res.layers[i],d=document.createElement('div');d.className='mrow';
+    const ck=document.createElement('input');ck.type='checkbox';ck.checked=l.on;ck.onchange=()=>l.on=ck.checked;
+    const th=document.createElement('div');th.className='thumb';th.appendChild(thumbOf(l.canvas));
+    const nm=document.createElement('div');nm.style.minWidth='0';
+    nm.innerHTML='<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div><small>'+l.w+'×'+l.h+(l.visible?'':' · ẩn')+'</small>';
+    nm.firstChild.textContent=l.name;
+    const se=document.createElement('select');
+    opts.forEach(([v,lab])=>{const o=document.createElement('option');o.value=v;o.textContent=lab;se.appendChild(o);});
+    se.value=l.part;
+    se.onchange=()=>{l.part=se.value;l.on=!!se.value;ck.checked=l.on;};
+    d.append(ck,th,nm,se);M.appendChild(d);
+  }
+}
+async function openPSD(f){
+  if(!f)return;
+  $('#modal').hidden=false;$('#mList').innerHTML='';$('#mOk').disabled=true;
+  try{
+    $('#mTitle').textContent='Đang đọc '+f.name+' …';
+    psdPending=await parsePSD(await f.arrayBuffer(),t=>$('#mTitle').textContent=t);
+    autoMatchPsd();buildModal();$('#mOk').disabled=false;
+  }catch(e){console.error(e);$('#modal').hidden=true;alert('Lỗi: '+(e.message||e));}
+}
+async function applyPSD(){
+  const chosen={};
+  psdPending.layers.forEach(l=>{if(l.on&&l.part)chosen[l.part]=l;});
+  const ids=Object.keys(chosen);
+  if(!ids.length){alert('Chưa gắn lớp nào vào bộ phận.');return;}
+  const usePos=$('#mPos').checked;
+  $('#mOk').disabled=true;
+  let s=1,cx=0,bottom=0;
+  if(usePos){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    ids.forEach(id=>{const l=chosen[id];x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.w);y1=Math.max(y1,l.y+l.h);});
+    s=Math.min(1,700/(y1-y0),540/(x1-x0));cx=(x0+x1)/2;bottom=y1;
+  }
+  for(const id of ids){
+    const p=byId[id],l=chosen[id];
+    await setSrc(p,l.canvas.toDataURL('image/png'));
+    if(usePos){p.h=Math.round(l.h*s*10)/10;p.sc=1;p.rot=0;p.flip=false;p.vis=true;}
+  }
+  if(usePos){
+    const tgt={};
+    ids.forEach(id=>{const p=byId[id],l=chosen[id];
+      tgt[id]={x:(l.x+p.px*l.w-cx)*s+300,y:(l.y+p.py*l.h-bottom)*s+770};});
+    const wp={};
+    const wpos=p=>{
+      if(wp[p.id])return wp[p.id];
+      if(tgt[p.id])return wp[p.id]=tgt[p.id];
+      const pw=p.parent==='root'?ROOT:wpos(byId[p.parent]);
+      return wp[p.id]={x:pw.x+p.x,y:pw.y+p.y};
+    };
+    parts.forEach(wpos);
+    ids.forEach(id=>{const p=byId[id],pw=p.parent==='root'?ROOT:wp[p.parent];
+      p.x=Math.round(tgt[id].x-pw.x);p.y=Math.round(tgt[id].y-pw.y);});
+  }
+  $('#modal').hidden=true;$('#mOk').disabled=false;psdPending=null;
+  select(sel);
+}
+
+// ---------- sự kiện ----------
+$('#psdIn').onchange=e=>{openPSD(e.target.files[0]);e.target.value='';};
+$('#mCancel').onclick=()=>{$('#modal').hidden=true;psdPending=null;};
+$('#mOk').onclick=applyPSD;
+$('#multi').onchange=async e=>{
+  const ids=parts.map(p=>p.id).sort((a,b)=>b.length-a.length);
+  for(const f of e.target.files){
+    const n=norm(f.name);
+    const id=ids.find(i=>norm(i)===n)||ids.find(i=>n.includes(norm(i)));
+    if(id)await loadFile(byId[id],f);
+  }
+  e.target.value='';select(sel);
+};
+$('#bSave').onclick=saveProject;
+$('#bLoad').onchange=e=>{if(e.target.files[0])openProject(e.target.files[0]);e.target.value='';};
+$('#bPng').onclick=async()=>dl(await toBlob(previewCanvas()),($('#cname').value.trim()||'tuong')+'.png');
+$('#bZip').onclick=exportZip;
+
+anSelect(curAnim);buildList();buildProps();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
