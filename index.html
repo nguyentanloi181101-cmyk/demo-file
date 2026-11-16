@@ -475,9 +475,7 @@ function renderHero() {
       const def = f[0] === 'startRage' ? DEF.roleRage[role || h.role] : h.s[f[0]];
       return `<div><label>${f[1]}</label>${num(['heroes', id, f[0]], f[0] === 'startRage' ? def + ' (theo chất tướng)' : def, 'min="0"')}</div>`;
     }).join('')}</div>
-    <h2 style="margin-top:16px">⚡ Số tia đánh (tuyệt kỹ)</h2>
-    <div class="note">Số tia của tướng này = số lần sát thương trên MỖI nhịp đánh (đòn thường và từng nhịp tuyệt kỹ). Mỗi tia gây đủ 3 loại sát thương (Công, Bạo, Phá giáp) 100%, hiện thành từng con số riêng, không cộng dồn. Để trống = mặc định 1 tia.</div>
-    <div class="grid"><div><label>Số tia đánh (1–100)</label>${num(['heroes', id, 'tia'], h.s.tia, 'min="1" max="100" step="1"')}</div></div>
+    
     <div style="margin-top:12px"><button class="dng" onclick="if(confirm('Khôi phục tất cả số của tướng này về mặc định?')){delete (cfg.heroes||{})['${id}'];renderHero()}">Khôi phục tướng này</button></div>`;
 }
 
@@ -890,7 +888,7 @@ const SKILL_GROUPS = [
 ];
 function renderSkill() {
   $('t-skill').innerHTML = `<h2>Chiêu thức & chiến đấu</h2>
-    <div class="note">Các hệ số cân bằng của tuyệt kỹ từng tướng và luật trúng / sát thương chung. Áp dụng cho PvE, Giang Hồ, Tỷ Võ, boss bang. Số lần / số đòn nên là số nguyên. Để trống = mặc định (chữ mờ). Mô tả kỹ năng trong màn tướng tự cập nhật theo số mới (khung 5 mục cố định, không sửa chữ được). <b>Không có ô chỉnh % sát thương tuyệt kỹ</b>: mức gốc theo chất tướng là CỐ ĐỊNH (Công kích 150% • Kỹ năng 65% • Hỗ trợ 100% • Trị liệu 100% • Thủ 200%), kỹ năng + phẩm chất chỉ cộng thêm, không nhân. <b>Số tia đánh</b> chỉnh ở tab Tướng.</div>
+    <div class="note">Các hệ số cân bằng của tuyệt kỹ từng tướng và luật trúng / sát thương chung. Áp dụng cho PvE, Giang Hồ, Tỷ Võ, boss bang. Số lần / số đòn nên là số nguyên. Để trống = mặc định (chữ mờ). Mô tả kỹ năng trong màn tướng tự cập nhật theo số mới (khung 5 mục cố định, không sửa chữ được). <b>Không có ô chỉnh % sát thương tuyệt kỹ</b>: mức gốc theo chất tướng là CỐ ĐỊNH (Công kích 150% • Kỹ năng 65% • Hỗ trợ 100% • Trị liệu 100% • Thủ 200%), kỹ năng + phẩm chất chỉ cộng thêm, không nhân. Số lần gây sát thương của từng chiêu chỉnh ở các ô <code>*_HITS</code> bên dưới (chỉ chia đều tổng sát thương, không làm tăng tổng).</div>
     ${SKILL_GROUPS.map(g => `<h3>${g[0]}</h3><div class="grid">${g[1].map(([k, l]) => `<div><label>${l} <code>${k}</code></label>${num(['skill', k], DEF.skill[k], 'min="0"')}</div>`).join('')}</div>`).join('')}`;
 }
 
